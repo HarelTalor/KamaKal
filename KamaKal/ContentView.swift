@@ -1,12 +1,14 @@
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    @Query private var users: [User]
+    
     var body: some View {
-        NavigationStack {
-            Text("KamaKal 🔥")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .navigationTitle("Home")
+        if users.isEmpty {
+            OnboardingView()
+        } else {
+            MainDashboardView()
         }
     }
 }
