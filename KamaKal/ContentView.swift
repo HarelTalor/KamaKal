@@ -8,7 +8,17 @@ struct ContentView: View {
         if users.isEmpty {
             OnboardingView()
         } else {
-            MainDashboardView()
+            TabView {
+                MainDashboardView()
+                    .tabItem {
+                        Label("Today", systemImage: "flame.fill")
+                    }
+                
+                HistoryView()
+                    .tabItem {
+                        Label("History", systemImage: "clock.fill")
+                    }
+            }
         }
     }
 }
