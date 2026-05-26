@@ -39,6 +39,8 @@ jobs:
     name: Build & Upload to TestFlight
     runs-on: macos-26
     timeout-minutes: 45
+    permissions:
+      contents: write
 
     steps:
       # -----------------------------------------------------------------------
@@ -220,7 +222,7 @@ jobs:
         run: |
           ARCHIVE_PATH="$RUNNER_TEMP/KamaKal.xcarchive"
 
-          xcodebuild archive \
+          if ! xcodebuild archive \
             -project KamaKal.xcodeproj \
             -scheme KamaKal \
             -destination "generic/platform=iOS" \
@@ -230,7 +232,22 @@ jobs:
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             CODE_SIGN_STYLE="Manual" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited)'
+            SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited)' > xcodebuild_build.log 2>&1; then
+            
+            echo "xcodebuild archive failed! Printing last 200 lines of log:"
+            tail -n 200 xcodebuild_build.log
+            
+            echo "Uploading logs to repository for local analysis..."
+            cp xcodebuild_build.log build_failed_log.txt
+            
+            git config --global user.name "GitHub Actions"
+            git config --global user.email "actions@github.com"
+            git add build_failed_log.txt
+            git commit -m "ci: add compilation failure logs [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+            
+            exit 1
+          fi
 
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
           echo "Archive created at $ARCHIVE_PATH"
