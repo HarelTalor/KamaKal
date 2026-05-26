@@ -23,7 +23,7 @@ name: Deploy to TestFlight
 
 on:
   push:
-    branches: [main]
+    branches: [main, test-ios-remote-deployment]
   workflow_dispatch:
 
 concurrency:
