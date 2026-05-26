@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct HistoryView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Meal.date, order: .reverse) private var allMeals: [Meal]
     @Query private var users: [User]
     
@@ -60,13 +61,31 @@ struct HistoryView: View {
                             .padding(.vertical, 4)
                         }
                     }
+                    .onDelete { offsets in
+                        deleteMeals(from: groupedMeals, at: offsets)
+                    }
                 }
             }
             .navigationTitle("History")
+        }
+    }
+
+    // MARK: - Deletion
+
+    private func deleteMeals(
+        from groups: [(date: Date, meals: [Meal], totalCalories: Int, isUnderTarget: Bool)],
+        at offsets: IndexSet
+    ) {
+        for index in offsets {
+            let group = groups[index]
+            for meal in group.meals {
+                modelContext.delete(meal)
+            }
         }
     }
 }
 
 #Preview {
     HistoryView()
+        .modelContainer(for: [User.self, Meal.self], inMemory: true)
 }

@@ -4,9 +4,7 @@ import SwiftData
 /// Represents the app user's profile, including physical stats and calorie goals.
 @Model
 final class User {
-    #Unique<User>([\.id])
-
-    var id: UUID
+    @Attribute(.unique) var id: UUID
     var age: Int
     var gender: Gender
     var heightCm: Double

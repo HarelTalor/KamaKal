@@ -138,7 +138,7 @@ struct MealCaptureView: View {
                 .font(.headline)
 
             // Ingredients list
-            ForEach(result.ingredients, id: \.name) { ingredient in
+            ForEach(Array(result.ingredients.enumerated()), id: \.offset) { _, ingredient in
                 HStack {
                     Image(systemName: "fork.knife")
                         .foregroundColor(.orange)
@@ -213,4 +213,5 @@ struct MealCaptureView: View {
 
 #Preview {
     MealCaptureView()
+        .modelContainer(for: [User.self, Meal.self], inMemory: true)
 }

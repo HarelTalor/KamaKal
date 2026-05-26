@@ -4,9 +4,7 @@ import SwiftData
 /// Represents a single meal entry, including AI-recognized ingredients and calorie breakdown.
 @Model
 final class Meal {
-    #Unique<Meal>([\.id])
-
-    var id: UUID
+    @Attribute(.unique) var id: UUID
     var date: Date
     var imagePath: String?
     var textDescription: String
@@ -15,9 +13,6 @@ final class Meal {
     var totalCalories: Int
     var isSyncedToSupabase: Bool
     var createdAt: Date
-
-    /// Inverse relationship – links this meal back to a DailySummary.
-    var dailySummary: DailySummary?
 
     init(
         id: UUID = UUID(),

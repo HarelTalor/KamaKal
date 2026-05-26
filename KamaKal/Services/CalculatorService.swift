@@ -53,7 +53,12 @@ struct CalculatorService {
         let targetCalories = tdee + goalAdjustment
         
         // Ensure we don't return dangerously low calorie targets
-        let minimumCalories = gender == .male ? 1500.0 : 1200.0
+        let minimumCalories: Double
+        switch gender {
+        case .male: minimumCalories = 1500.0
+        case .female: minimumCalories = 1200.0
+        case .other: minimumCalories = 1350.0
+        }
         
         return Int(max(targetCalories, minimumCalories))
     }

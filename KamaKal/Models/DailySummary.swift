@@ -2,18 +2,13 @@ import Foundation
 import SwiftData
 
 /// Aggregates all meals for a single calendar day and compares against the user's target.
+/// Currently kept as a standalone model for future use — no active relationship to Meal.
 @Model
 final class DailySummary {
-    #Unique<DailySummary>([\.id])
-
-    var id: UUID
+    @Attribute(.unique) var id: UUID
     var date: Date
     var totalConsumed: Int
     var calorieTarget: Int
-
-    /// One-to-many relationship: a daily summary owns many meals.
-    @Relationship(deleteRule: .cascade, inverse: \Meal.dailySummary)
-    var meals: [Meal]
 
     /// Remaining calories for the day (positive = under target, negative = over target).
     var remaining: Int {
@@ -30,18 +25,11 @@ final class DailySummary {
         id: UUID = UUID(),
         date: Date = .now,
         totalConsumed: Int = 0,
-        calorieTarget: Int = 2000,
-        meals: [Meal] = []
+        calorieTarget: Int = 2000
     ) {
         self.id = id
         self.date = date
         self.totalConsumed = totalConsumed
         self.calorieTarget = calorieTarget
-        self.meals = meals
-    }
-
-    /// Recalculates `totalConsumed` from the associated meals array.
-    func recalculate() {
-        totalConsumed = meals.reduce(0) { $0 + $1.totalCalories }
     }
 }

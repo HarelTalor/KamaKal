@@ -1,9 +1,14 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: "com.kamakal", category: "SupabaseManager")
+
+#if canImport(Supabase)
 import Supabase
 
 /// Manages all communication with the Supabase backend.
 /// Handles authentication, data syncing, and remote storage.
-final class SupabaseManager: ObservableObject {
+final class SupabaseManager {
 
     // MARK: - Singleton
 
@@ -11,31 +16,48 @@ final class SupabaseManager: ObservableObject {
 
     // MARK: - Supabase Client
 
-    /// The main Supabase client instance.
-    /// Replace the placeholder URL and anon key with your actual Supabase project credentials.
-    let client: SupabaseClient
+    /// The main Supabase client instance. `nil` if the URL is a placeholder.
+    let client: SupabaseClient?
+
+    /// Whether the manager was initialized with valid credentials.
+    var isConfigured: Bool { client != nil }
 
     // MARK: - Init
 
     private init() {
-        guard
-            let url = URL(string: Constants.supabaseURL)
-        else {
-            fatalError("Invalid Supabase URL. Check Constants.swift.")
+        // Guard against placeholder credentials
+        if Constants.supabaseURL.contains("YOUR_PROJECT_ID") ||
+           Constants.supabaseAnonKey.contains("YOUR_SUPABASE_ANON_KEY") {
+            logger.warning("Supabase is not configured — using placeholder credentials. Sync is disabled.")
+            self.client = nil
+            return
+        }
+
+        guard let url = URL(string: Constants.supabaseURL) else {
+            logger.error("Invalid Supabase URL in Constants.swift. Sync is disabled.")
+            self.client = nil
+            return
         }
 
         self.client = SupabaseClient(
             supabaseURL: url,
             supabaseKey: Constants.supabaseAnonKey
         )
+        logger.info("SupabaseManager initialized successfully.")
     }
 
     // MARK: - Meal Sync
 
     /// Syncs unsynced local `Meal` records to the Supabase `meals` table.
-    /// - Parameter meals: An array of `Meal` objects to upload.
+    /// - Parameter meals: An array of `MealDTO` objects to upload.
     /// - Throws: A Supabase or network error if the upload fails.
     func syncMeals(_ meals: [MealDTO]) async throws {
+        guard let client else {
+            logger.warning("syncMeals called with \(meals.count) meals — sync skipped (Supabase not configured).")
+            return
+        }
+
+        logger.info("syncMeals called with \(meals.count) meals — sync not yet implemented.")
         // TODO: Implement upsert logic
         // Example (uncomment when table is ready):
         //
@@ -45,6 +67,28 @@ final class SupabaseManager: ObservableObject {
         //     .execute()
     }
 }
+
+#else
+
+// MARK: - Stub when Supabase SDK is not available
+
+/// Stub SupabaseManager used when the Supabase SPM package is not linked.
+/// All sync operations log warnings and return gracefully.
+final class SupabaseManager {
+
+    static let shared = SupabaseManager()
+    private init() {
+        logger.warning("Supabase SDK not available — SupabaseManager is a no-op stub.")
+    }
+
+    var isConfigured: Bool { false }
+
+    func syncMeals(_ meals: [MealDTO]) async throws {
+        logger.warning("syncMeals called with \(meals.count) meals — Supabase SDK not linked, skipping.")
+    }
+}
+
+#endif
 
 // MARK: - MealDTO
 

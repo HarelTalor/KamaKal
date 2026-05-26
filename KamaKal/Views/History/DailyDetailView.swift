@@ -1,6 +1,8 @@
 import SwiftUI
+import SwiftData
 
 struct DailyDetailView: View {
+    @Environment(\.modelContext) private var modelContext
     let date: Date
     let meals: [Meal]
     
@@ -25,12 +27,25 @@ struct DailyDetailView: View {
                 // Meals List
                 ForEach(meals.sorted(by: { $0.createdAt > $1.createdAt })) { meal in
                     mealDetailCard(meal)
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                deleteMeal(meal)
+                            } label: {
+                                Label("Delete Meal", systemImage: "trash")
+                            }
+                        }
                 }
             }
             .padding()
         }
         .navigationTitle(date.formatted(date: .abbreviated, time: .omitted))
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: - Delete
+
+    private func deleteMeal(_ meal: Meal) {
+        modelContext.delete(meal)
     }
     
     // MARK: - Meal Detail Card
@@ -39,7 +54,8 @@ struct DailyDetailView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Image Header
             if let imagePath = meal.imagePath,
-               let uiImage = UIImage(contentsOfFile: imagePath) {
+               let imageURL = MealCaptureManager.imageURL(for: imagePath),
+               let uiImage = UIImage(contentsOfFile: imageURL.path) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
@@ -72,14 +88,15 @@ struct DailyDetailView: View {
                 
                 Divider()
                 
-                // Ingredients Breakdown
+                // Ingredients Breakdown — use enumerated offset as ID to handle duplicates (W10)
                 VStack(alignment: .leading, spacing: 8) {
                     Text("AI Analysis Breakdown")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .textCase(.uppercase)
                     
-                    ForEach(Array(zip(meal.ingredients, meal.caloriesPerIngredient)), id: \.0) { ingredient, calories in
+                    ForEach(Array(zip(meal.ingredients, meal.caloriesPerIngredient).enumerated()), id: \.offset) { _, pair in
+                        let (ingredient, calories) = pair
                         HStack {
                             Text(ingredient)
                                 .font(.body)

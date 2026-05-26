@@ -3,12 +3,14 @@ import SwiftData
 
 struct MainDashboardView: View {
     @Query private var users: [User]
-    @Query(
-        filter: #Predicate<Meal> {
-            $0.date >= Calendar.current.startOfDay(for: Date())
-        },
-        sort: \Meal.createdAt, order: .reverse
-    ) private var todayMeals: [Meal]
+    @Query(sort: \Meal.date, order: .reverse) private var allMeals: [Meal]
+
+    /// Filters meals to only those from today. Avoids using #Predicate with
+    /// non-pure expressions (Calendar calls) which won't compile.
+    private var todayMeals: [Meal] {
+        let startOfDay = Calendar.current.startOfDay(for: Date())
+        return allMeals.filter { $0.date >= startOfDay }
+    }
     
     @State private var showMealCapture = false
     @State private var animatedProgress: Double = 0.0
@@ -152,7 +154,8 @@ struct MealCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let imagePath = meal.imagePath,
-               let uiImage = UIImage(contentsOfFile: imagePath) {
+               let imageURL = MealCaptureManager.imageURL(for: imagePath),
+               let uiImage = UIImage(contentsOfFile: imageURL.path) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
@@ -185,4 +188,5 @@ struct MealCardView: View {
 
 #Preview {
     MainDashboardView()
+        .modelContainer(for: [User.self, Meal.self], inMemory: true)
 }

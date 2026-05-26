@@ -158,7 +158,7 @@ struct OnboardingView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.blue)
-                    .cornerRadius(12)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .padding(.horizontal, 30)
             .padding(.bottom, 40)
@@ -197,4 +197,5 @@ struct OnboardingView: View {
 
 #Preview {
     OnboardingView()
+        .modelContainer(for: [User.self, Meal.self], inMemory: true)
 }
