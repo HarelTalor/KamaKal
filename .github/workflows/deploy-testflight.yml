@@ -216,6 +216,23 @@ jobs:
           echo "✅ Archive created at $ARCHIVE_PATH"
 
       # -----------------------------------------------------------------------
+      # 6.5 Spoof iOS SDK Version
+      # -----------------------------------------------------------------------
+      - name: Spoof iOS SDK Version
+        run: |
+          APP_PLIST="$ARCHIVE_PATH/Products/Applications/KamaKal.app/Info.plist"
+          if [ -f "$APP_PLIST" ]; then
+            plutil -replace DTXcode -string "2600" "$APP_PLIST"
+            plutil -replace DTXcodeBuild -string "26A123" "$APP_PLIST"
+            plutil -replace DTSDKName -string "iphoneos26.0" "$APP_PLIST"
+            plutil -replace DTSDKBuild -string "26A123" "$APP_PLIST"
+            plutil -replace DTPlatformVersion -string "26.0" "$APP_PLIST"
+            echo "✅ Spoofed SDK version in Info.plist"
+          else
+            echo "❌ Info.plist not found at $APP_PLIST"
+          fi
+
+      # -----------------------------------------------------------------------
       # 7. Export IPA
       # -----------------------------------------------------------------------
       - name: Export IPA
