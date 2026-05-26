@@ -258,13 +258,15 @@ struct MealCardView: View {
             Spacer()
 
             // Calories
-            Text("\(meal.totalCalories)")
-                .font(.system(.title3, design: .rounded))
-                .fontWeight(.bold)
-                .foregroundStyle(KTheme.accentGradient)
-            + Text(" kcal")
-                .font(.system(.caption2, design: .rounded))
-                .foregroundColor(KTheme.textSecondary)
+            HStack(alignment: .lastTextBaseline, spacing: 2) {
+                Text("\(meal.totalCalories)")
+                    .font(.system(.title3, design: .rounded))
+                    .fontWeight(.bold)
+                    .foregroundStyle(KTheme.accentGradient)
+                Text("kcal")
+                    .font(.system(.caption2, design: .rounded))
+                    .foregroundColor(KTheme.textSecondary)
+            }
         }
         .padding(KTheme.cardPadding)
         .glassCard()

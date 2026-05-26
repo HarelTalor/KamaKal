@@ -55,12 +55,14 @@ struct DailyDetailView: View {
 
     private var headerSection: some View {
         VStack(spacing: 16) {
-            Text("\(totalCalories)")
-                .font(.system(size: 52, weight: .bold, design: .rounded))
-                .foregroundStyle(KTheme.accentGradient)
-            + Text(" kcal")
-                .font(.system(.title3, design: .rounded))
-                .foregroundColor(KTheme.textSecondary)
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text("\(totalCalories)")
+                    .font(.system(size: 52, weight: .bold, design: .rounded))
+                    .foregroundStyle(KTheme.accentGradient)
+                Text("kcal")
+                    .font(.system(.title3, design: .rounded))
+                    .foregroundColor(KTheme.textSecondary)
+            }
 
             // Macro row
             HStack(spacing: 24) {
