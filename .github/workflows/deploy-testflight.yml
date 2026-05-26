@@ -33,7 +33,7 @@ concurrency:
 env:
   APP_NAME: KamaKal
   SCHEME: KamaKal
-  XCODE_VERSION: "15.4"      # Pinned; update as needed
+  XCODE_VERSION: "16.1"      # Pinned; update as needed
 
 jobs:
   build-and-deploy:
