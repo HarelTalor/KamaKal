@@ -33,12 +33,11 @@ concurrency:
 env:
   APP_NAME: KamaKal
   SCHEME: KamaKal
-  XCODE_VERSION: "16.1"      # Pinned; update as needed
 
 jobs:
   build-and-deploy:
     name: Build & Upload to TestFlight
-    runs-on: macos-14          # Apple Silicon (M1) runner – faster builds
+    runs-on: macos-latest
     timeout-minutes: 45
 
     steps:
@@ -72,13 +71,6 @@ jobs:
             echo "✅ Injected GEMINI_API_KEY"
           fi
 
-      # -----------------------------------------------------------------------
-      # 3. Select Xcode version
-      # -----------------------------------------------------------------------
-      - name: Select Xcode ${{ env.XCODE_VERSION }}
-        run: |
-          sudo xcode-select -s "/Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer"
-          xcodebuild -version
 
       # -----------------------------------------------------------------------
       # 4. Install Apple certificate and provisioning profile
