@@ -1,22 +1,22 @@
 # =============================================================================
-# KamaKal — Build & Deploy to TestFlight
+# KamaKal - Build & Deploy to TestFlight
 # =============================================================================
 # This workflow builds the KamaKal iOS app on a GitHub-hosted macOS runner and
 # uploads it to TestFlight via the App Store Connect API.
 #
 # Because the repository contains only Swift source files (no .xcodeproj),
-# the workflow generates an Xcode project using `swift package init` and a
-# helper script, then builds, archives, and uploads.
+# the workflow generates an Xcode project using XcodeGen, then builds,
+# archives, and uploads.
 #
 # Required GitHub Secrets (see testflight_setup_guide.md for how to obtain):
-#   APPLE_CERTIFICATE_BASE64       – Base64-encoded .p12 distribution certificate
-#   APPLE_CERTIFICATE_PASSWORD     – Password used when exporting the .p12
-#   APPLE_PROVISIONING_PROFILE_BASE64 – Base64-encoded .mobileprovision file
-#   APPSTORE_CONNECT_API_KEY_ID    – App Store Connect API Key ID
-#   APPSTORE_CONNECT_ISSUER_ID     – App Store Connect Issuer ID
-#   APPSTORE_CONNECT_API_PRIVATE_KEY – Full contents of the .p8 private key file
-#   APPLE_TEAM_ID                  – Your 10-character Apple Developer Team ID
-#   BUNDLE_IDENTIFIER              – e.g. com.yourname.KamaKal
+#   APPLE_CERTIFICATE_BASE64       - Base64-encoded .p12 distribution certificate
+#   APPLE_CERTIFICATE_PASSWORD     - Password used when exporting the .p12
+#   APPLE_PROVISIONING_PROFILE_BASE64 - Base64-encoded .mobileprovision file
+#   APPSTORE_CONNECT_API_KEY_ID    - App Store Connect API Key ID
+#   APPSTORE_CONNECT_ISSUER_ID     - App Store Connect Issuer ID
+#   APPSTORE_CONNECT_API_PRIVATE_KEY - Full contents of the .p8 private key file
+#   APPLE_TEAM_ID                  - Your 10-character Apple Developer Team ID
+#   BUNDLE_IDENTIFIER              - e.g. com.yourname.KamaKal
 # =============================================================================
 
 name: Deploy to TestFlight
@@ -24,7 +24,7 @@ name: Deploy to TestFlight
 on:
   push:
     branches: [main]
-  workflow_dispatch:          # Allow manual trigger from GitHub UI
+  workflow_dispatch:
 
 concurrency:
   group: deploy-testflight-${{ github.ref }}
@@ -37,7 +37,7 @@ env:
 jobs:
   build-and-deploy:
     name: Build & Upload to TestFlight
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 45
 
     steps:
@@ -48,7 +48,29 @@ jobs:
         uses: actions/checkout@v4
 
       # -----------------------------------------------------------------------
-      # 2. Inject API Keys into Constants.swift
+      # 2. Select Xcode 26
+      # -----------------------------------------------------------------------
+      - name: Select Xcode 26
+        run: |
+          # List available Xcode versions for debugging
+          ls /Applications/ | grep Xcode || true
+
+          # Try to find Xcode 26.x
+          XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+
+          if [ -z "$XCODE_PATH" ]; then
+            # Fall back to default Xcode on the runner
+            echo "No Xcode 26.x found, using default Xcode"
+            XCODE_PATH=$(xcode-select -p | sed 's|/Contents/Developer||')
+          fi
+
+          echo "Using Xcode at: $XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      # -----------------------------------------------------------------------
+      # 3. Inject API Keys into Constants.swift
       # -----------------------------------------------------------------------
       - name: Inject API Keys
         env:
@@ -58,19 +80,18 @@ jobs:
         run: |
           if [ -n "$SUPABASE_URL" ]; then
             sed -i '' "s|https://YOUR_PROJECT_ID.supabase.co|$SUPABASE_URL|g" KamaKal/Services/Constants.swift
-            echo "✅ Injected SUPABASE_URL"
-          fi
-          
-          if [ -n "$SUPABASE_ANON_KEY" ]; then
-            sed -i '' "s|YOUR_SUPABASE_ANON_KEY|$SUPABASE_ANON_KEY|g" KamaKal/Services/Constants.swift
-            echo "✅ Injected SUPABASE_ANON_KEY"
-          fi
-          
-          if [ -n "$GEMINI_API_KEY" ]; then
-            sed -i '' "s|YOUR_GEMINI_API_KEY|$GEMINI_API_KEY|g" KamaKal/Services/Constants.swift
-            echo "✅ Injected GEMINI_API_KEY"
+            echo "Injected SUPABASE_URL"
           fi
 
+          if [ -n "$SUPABASE_ANON_KEY" ]; then
+            sed -i '' "s|YOUR_SUPABASE_ANON_KEY|$SUPABASE_ANON_KEY|g" KamaKal/Services/Constants.swift
+            echo "Injected SUPABASE_ANON_KEY"
+          fi
+
+          if [ -n "$GEMINI_API_KEY" ]; then
+            sed -i '' "s|YOUR_GEMINI_API_KEY|$GEMINI_API_KEY|g" KamaKal/Services/Constants.swift
+            echo "Injected GEMINI_API_KEY"
+          fi
 
       # -----------------------------------------------------------------------
       # 4. Install Apple certificate and provisioning profile
@@ -107,7 +128,7 @@ jobs:
 
           security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
 
-          echo "✅ Certificate installed into temporary keychain"
+          echo "Certificate installed into temporary keychain"
 
           # ---- Install provisioning profile ----
           PP_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
@@ -124,7 +145,7 @@ jobs:
           echo "PROVISIONING_PROFILE_UUID=$PP_UUID" >> "$GITHUB_ENV"
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
 
-          echo "✅ Provisioning profile installed (UUID: $PP_UUID)"
+          echo "Provisioning profile installed (UUID: $PP_UUID)"
 
       # -----------------------------------------------------------------------
       # 5. Generate Xcode project
@@ -135,8 +156,8 @@ jobs:
           BUNDLE_ID: ${{ secrets.BUNDLE_IDENTIFIER }}
         run: |
           brew install xcodegen
-          
-          cat > project.yml << EOF
+
+          cat > project.yml << 'XCODEGEN_EOF'
           name: KamaKal
           packages:
             Supabase:
@@ -147,7 +168,7 @@ jobs:
               type: application
               platform: iOS
               deploymentTarget: "17.0"
-              sources: 
+              sources:
                 - KamaKal
               dependencies:
                 - package: Supabase
@@ -155,9 +176,6 @@ jobs:
                 base:
                   CODE_SIGN_STYLE: Manual
                   CODE_SIGN_IDENTITY: "Apple Distribution"
-                  DEVELOPMENT_TEAM: \${TEAM_ID}
-                  PRODUCT_BUNDLE_IDENTIFIER: \${BUNDLE_ID}
-                  PROVISIONING_PROFILE_SPECIFIER: "\${PROVISIONING_PROFILE_UUID}"
                   GENERATE_INFOPLIST_FILE: YES
                   CURRENT_PROJECT_VERSION: 1
                   MARKETING_VERSION: 1.0.0
@@ -168,17 +186,19 @@ jobs:
                   INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
                   INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
                   INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-                  OTHER_LDFLAGS: "$(inherited) -Wl,-sdk_version,26.0"
-          EOF
+          XCODEGEN_EOF
+
+          # Inject secrets into project.yml (can't use shell vars inside 'EOF')
+          sed -i '' "s|CODE_SIGN_STYLE: Manual|CODE_SIGN_STYLE: Manual\n                  DEVELOPMENT_TEAM: ${TEAM_ID}\n                  PRODUCT_BUNDLE_IDENTIFIER: ${BUNDLE_ID}\n                  PROVISIONING_PROFILE_SPECIFIER: \"${PROVISIONING_PROFILE_UUID}\"|" project.yml
 
           # Generate Xcode project from project.yml
           xcodegen generate
 
-          echo "✅ Xcode project generated"
+          echo "Xcode project generated"
           ls -la *.xcodeproj || true
 
       # -----------------------------------------------------------------------
-      # 5. Set up App Store Connect API key for altool / notarytool
+      # 6. Set up App Store Connect API key
       # -----------------------------------------------------------------------
       - name: Set up App Store Connect API key
         env:
@@ -188,10 +208,10 @@ jobs:
           API_KEY_DIR="$HOME/.private_keys"
           mkdir -p "$API_KEY_DIR"
           echo "$API_PRIVATE_KEY" > "$API_KEY_DIR/AuthKey_${API_KEY_ID}.p8"
-          echo "✅ API key written to $API_KEY_DIR/AuthKey_${API_KEY_ID}.p8"
+          echo "API key written to $API_KEY_DIR/AuthKey_${API_KEY_ID}.p8"
 
       # -----------------------------------------------------------------------
-      # 6. Build archive
+      # 7. Build archive
       # -----------------------------------------------------------------------
       - name: Build archive
         env:
@@ -210,31 +230,13 @@ jobs:
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             CODE_SIGN_STYLE="Manual" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            OTHER_LDFLAGS='$(inherited)' \
             SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited)'
 
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
-          echo "✅ Archive created at $ARCHIVE_PATH"
+          echo "Archive created at $ARCHIVE_PATH"
 
       # -----------------------------------------------------------------------
-      # 6.5 Spoof iOS SDK Version
-      # -----------------------------------------------------------------------
-      - name: Spoof iOS SDK Version
-        run: |
-          APP_PLIST="$ARCHIVE_PATH/Products/Applications/KamaKal.app/Info.plist"
-          if [ -f "$APP_PLIST" ]; then
-            plutil -replace DTXcode -string "2600" "$APP_PLIST"
-            plutil -replace DTXcodeBuild -string "26A123" "$APP_PLIST"
-            plutil -replace DTSDKName -string "iphoneos26.0" "$APP_PLIST"
-            plutil -replace DTSDKBuild -string "26A123" "$APP_PLIST"
-            plutil -replace DTPlatformVersion -string "26.0" "$APP_PLIST"
-            echo "✅ Spoofed SDK version in Info.plist"
-          else
-            echo "❌ Info.plist not found at $APP_PLIST"
-          fi
-
-      # -----------------------------------------------------------------------
-      # 7. Export IPA
+      # 8. Export IPA
       # -----------------------------------------------------------------------
       - name: Export IPA
         env:
@@ -244,7 +246,6 @@ jobs:
           EXPORT_DIR="$RUNNER_TEMP/export"
           mkdir -p "$EXPORT_DIR"
 
-          # Create ExportOptions.plist
           cat > "$RUNNER_TEMP/ExportOptions.plist" << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -278,11 +279,11 @@ jobs:
             -exportPath "$EXPORT_DIR"
 
           echo "EXPORT_DIR=$EXPORT_DIR" >> "$GITHUB_ENV"
-          echo "✅ IPA exported to $EXPORT_DIR"
+          echo "IPA exported to $EXPORT_DIR"
           ls -la "$EXPORT_DIR"
 
       # -----------------------------------------------------------------------
-      # 8. Upload to TestFlight
+      # 9. Upload to TestFlight
       # -----------------------------------------------------------------------
       - name: Upload to TestFlight
         env:
@@ -292,11 +293,11 @@ jobs:
           IPA_PATH=$(find "$EXPORT_DIR" -name "*.ipa" | head -1)
 
           if [ -z "$IPA_PATH" ]; then
-            echo "❌ No IPA found in $EXPORT_DIR"
+            echo "No IPA found in $EXPORT_DIR"
             exit 1
           fi
 
-          echo "📤 Uploading $IPA_PATH to TestFlight..."
+          echo "Uploading $IPA_PATH to TestFlight..."
 
           xcrun altool --upload-app \
             --type ios \
@@ -305,15 +306,15 @@ jobs:
             --apiIssuer "$API_ISSUER_ID" \
             --verbose
 
-          echo "✅ Upload to TestFlight complete!"
+          echo "Upload to TestFlight complete!"
 
       # -----------------------------------------------------------------------
-      # 9. Cleanup keychain (always runs, even on failure)
+      # 10. Cleanup keychain (always runs, even on failure)
       # -----------------------------------------------------------------------
       - name: Cleanup keychain
         if: always()
         run: |
           if [ -f "$KEYCHAIN_PATH" ]; then
             security delete-keychain "$KEYCHAIN_PATH"
-            echo "🧹 Temporary keychain deleted"
+            echo "Temporary keychain deleted"
           fi
