@@ -209,7 +209,7 @@ jobs:
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             CODE_SIGN_STYLE="Manual" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            OTHER_LDFLAGS='$(inherited)' \
+            OTHER_LDFLAGS='$(inherited) -Wl,-sdk_version,26.0' \
             SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited)'
 
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
