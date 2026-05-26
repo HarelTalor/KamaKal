@@ -7,7 +7,7 @@ struct MainDashboardView: View {
 
     init() {
         let startOfDay = Calendar.current.startOfDay(for: Date())
-        let predicate = #Predicate<Meal> { $0.date >= startOfDay }
+        let predicate = #Predicate<Meal> { meal in meal.date >= startOfDay }
         _todayMeals = Query(filter: predicate, sort: \Meal.date, order: .reverse)
     }
 

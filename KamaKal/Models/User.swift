@@ -12,6 +12,8 @@ final class User {
     var activityLevel: ActivityLevel
     var goal: Goal
     var dailyCalorieTarget: Int
+    /// True when the user manually typed a specific calorie number rather than using the formula.
+    var usesCustomCalorieTarget: Bool
     var createdAt: Date
     var updatedAt: Date
 
@@ -24,6 +26,7 @@ final class User {
         activityLevel: ActivityLevel,
         goal: Goal,
         dailyCalorieTarget: Int,
+        usesCustomCalorieTarget: Bool = false,
         createdAt: Date = .now,
         updatedAt: Date = .now
     ) {
@@ -35,6 +38,7 @@ final class User {
         self.activityLevel = activityLevel
         self.goal = goal
         self.dailyCalorieTarget = dailyCalorieTarget
+        self.usesCustomCalorieTarget = usesCustomCalorieTarget
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -46,6 +50,14 @@ enum Gender: String, Codable, CaseIterable {
     case male
     case female
     case other
+
+    var displayName: String {
+        switch self {
+        case .male:   return "Male"
+        case .female: return "Female"
+        case .other:  return "Other"
+        }
+    }
 }
 
 enum ActivityLevel: String, Codable, CaseIterable {

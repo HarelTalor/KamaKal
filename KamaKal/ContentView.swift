@@ -14,10 +14,13 @@ struct ContentView: View {
             ZStack(alignment: .bottom) {
                 // Tab Content
                 Group {
-                    if selectedTab == 0 {
+                    switch selectedTab {
+                    case 0:
                         MainDashboardView()
-                    } else {
+                    case 1:
                         HistoryView()
+                    default:
+                        ProfileView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -62,8 +65,13 @@ struct ContentView: View {
 
             // History Tab
             tabButton(icon: "clock.fill", label: "History", index: 1)
+
+            Spacer()
+
+            // Profile Tab
+            tabButton(icon: "person.fill", label: "Profile", index: 2)
         }
-        .padding(.horizontal, 32)
+        .padding(.horizontal, 24)
         .padding(.top, 12)
         .padding(.bottom, 8)
         .background(
@@ -91,6 +99,7 @@ struct ContentView: View {
                 Image(systemName: icon)
                     .font(.system(size: 22))
                     .scaleEffect(selectedTab == index ? 1.15 : 1.0)
+                    .animation(.spring(response: 0.3), value: selectedTab)
 
                 Text(label)
                     .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -103,5 +112,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [User.self, Meal.self], inMemory: true)
+        .modelContainer(for: [User.self, Meal.self, DailySummary.self], inMemory: true)
+        .preferredColorScheme(.dark)
 }

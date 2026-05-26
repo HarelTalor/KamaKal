@@ -7,6 +7,12 @@ enum OnboardingStep: Hashable {
     case result
 }
 
+/// Mode chosen by user for calorie target
+enum CalorieMode {
+    case formula   // auto-calculate with Mifflin-St Jeor
+    case custom    // manually typed number
+}
+
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
 
@@ -17,12 +23,10 @@ struct OnboardingView: View {
     @State private var weightKg: Double = 65.0
     @State private var activityLevel: ActivityLevel = .moderatelyActive
     @State private var goal: Goal = .maintain
+    @State private var calorieMode: CalorieMode = .formula
+    @State private var customCalorieTarget: Int = 2000
     @State private var calculatedTarget: Int = 0
     @State private var animatedTarget: Int = 0
-
-    private var currentStep: Int {
-        path.count
-    }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -64,7 +68,6 @@ struct OnboardingView: View {
                     stepIndicator(current: 0)
                         .padding(.top, 16)
 
-                    // Hero Icon
                     Image(systemName: "person.fill")
                         .font(.system(size: 56))
                         .foregroundStyle(KTheme.accentGradient)
@@ -228,14 +231,14 @@ struct OnboardingView: View {
         .navigationBarHidden(true)
     }
 
-    // MARK: - Step 3: Lifestyle
+    // MARK: - Step 3: Lifestyle & Calorie Mode
 
     private var lifestyleView: some View {
         ZStack {
             KTheme.backgroundPrimary.ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: 32) {
+                VStack(spacing: 28) {
                     stepIndicator(current: 2)
                         .padding(.top, 16)
 
@@ -249,72 +252,145 @@ struct OnboardingView: View {
                         .fontWeight(.bold)
                         .foregroundColor(KTheme.textPrimary)
 
-                    // Activity Level
+                    // ── Calorie Mode Toggle ──────────────────────────────────
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Activity Level")
+                        Text("How to set your calorie target?")
                             .font(.system(.headline, design: .rounded))
                             .foregroundColor(KTheme.textSecondary)
 
-                        VStack(spacing: 8) {
-                            ForEach(ActivityLevel.allCases, id: \.self) { level in
-                                Button(action: { activityLevel = level }) {
-                                    HStack {
-                                        Text(level.displayName)
-                                            .font(.system(.body, design: .rounded))
-                                            .fontWeight(.medium)
-                                        Spacer()
-                                        if activityLevel == level {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(KTheme.accentOrange)
-                                        }
-                                    }
-                                    .foregroundColor(activityLevel == level ? KTheme.textPrimary : KTheme.textSecondary)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 14)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(activityLevel == level ? KTheme.backgroundElevated : Color.clear)
-                                    )
-                                }
-                            }
+                        HStack(spacing: 0) {
+                            modeTab(label: "Use Formula", icon: "wand.and.stars", mode: .formula)
+                            modeTab(label: "Set My Own", icon: "slider.horizontal.3", mode: .custom)
                         }
                         .padding(4)
                         .glassCard()
                     }
 
-                    // Goal
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Your Goal")
-                            .font(.system(.headline, design: .rounded))
-                            .foregroundColor(KTheme.textSecondary)
+                    // ── Formula Path ────────────────────────────────────────
+                    if calorieMode == .formula {
+                        // Activity Level
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Activity Level")
+                                .font(.system(.headline, design: .rounded))
+                                .foregroundColor(KTheme.textSecondary)
 
-                        HStack(spacing: 12) {
-                            ForEach(Goal.allCases, id: \.self) { g in
-                                Button(action: { goal = g }) {
-                                    Text(g.displayName)
-                                        .font(.system(.subheadline, design: .rounded))
-                                        .fontWeight(.semibold)
-                                        .frame(maxWidth: .infinity)
+                            VStack(spacing: 8) {
+                                ForEach(ActivityLevel.allCases, id: \.self) { level in
+                                    Button(action: { activityLevel = level }) {
+                                        HStack {
+                                            Text(level.displayName)
+                                                .font(.system(.body, design: .rounded))
+                                                .fontWeight(.medium)
+                                            Spacer()
+                                            if activityLevel == level {
+                                                Image(systemName: "checkmark.circle.fill")
+                                                    .foregroundColor(KTheme.accentOrange)
+                                            }
+                                        }
+                                        .foregroundColor(activityLevel == level ? KTheme.textPrimary : KTheme.textSecondary)
+                                        .padding(.horizontal, 16)
                                         .padding(.vertical, 14)
-                                        .foregroundColor(goal == g ? .white : KTheme.textSecondary)
                                         .background(
                                             RoundedRectangle(cornerRadius: 12)
-                                                .fill(goal == g ? AnyShapeStyle(KTheme.accentGradient) : AnyShapeStyle(KTheme.backgroundCard))
+                                                .fill(activityLevel == level ? KTheme.backgroundElevated : Color.clear)
                                         )
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(goal == g ? Color.clear : KTheme.border, lineWidth: 1)
-                                        )
+                                    }
                                 }
-                                .animation(.spring(response: 0.3), value: goal)
+                            }
+                            .padding(4)
+                            .glassCard()
+                        }
+
+                        // Goal
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Your Goal")
+                                .font(.system(.headline, design: .rounded))
+                                .foregroundColor(KTheme.textSecondary)
+
+                            HStack(spacing: 12) {
+                                ForEach(Goal.allCases, id: \.self) { g in
+                                    Button(action: { goal = g }) {
+                                        Text(g.displayName)
+                                            .font(.system(.subheadline, design: .rounded))
+                                            .fontWeight(.semibold)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 14)
+                                            .foregroundColor(goal == g ? .white : KTheme.textSecondary)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .fill(goal == g ? AnyShapeStyle(KTheme.accentGradient) : AnyShapeStyle(KTheme.backgroundCard))
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(goal == g ? Color.clear : KTheme.border, lineWidth: 1)
+                                            )
+                                    }
+                                    .animation(.spring(response: 0.3), value: goal)
+                                }
                             }
                         }
                     }
 
-                    Spacer(minLength: 40)
+                    // ── Custom Path ─────────────────────────────────────────
+                    if calorieMode == .custom {
+                        VStack(spacing: 20) {
+                            Text("Set your daily calorie target")
+                                .font(.system(.headline, design: .rounded))
+                                .foregroundColor(KTheme.textSecondary)
 
-                    Button(action: { calculateAndGoToResult() }) {
-                        Text("Calculate My Target")
+                            // Big number display
+                            VStack(spacing: 8) {
+                                HStack(alignment: .lastTextBaseline, spacing: 4) {
+                                    Text("\(customCalorieTarget)")
+                                        .font(.system(size: 64, weight: .bold, design: .rounded))
+                                        .foregroundStyle(KTheme.accentGradient)
+                                        .contentTransition(.numericText())
+                                        .animation(.spring(response: 0.3), value: customCalorieTarget)
+                                    Text("kcal")
+                                        .font(.system(.title2, design: .rounded))
+                                        .foregroundColor(KTheme.textSecondary)
+                                }
+                                Text(calorieHint)
+                                    .font(.system(.caption, design: .rounded))
+                                    .foregroundColor(KTheme.textSecondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.vertical, 24)
+                            .frame(maxWidth: .infinity)
+                            .glassCard()
+
+                            // Stepper buttons
+                            HStack(spacing: 16) {
+                                stepperButton("-100", amount: -100)
+                                stepperButton("-50", amount: -50)
+                                stepperButton("+50", amount: 50)
+                                stepperButton("+100", amount: 100)
+                            }
+
+                            // Slider
+                            VStack(spacing: 8) {
+                                Slider(value: Binding(
+                                    get: { Double(customCalorieTarget) },
+                                    set: { customCalorieTarget = Int($0) }
+                                ), in: 800...5000, step: 50)
+                                .tint(KTheme.accentOrange)
+
+                                HStack {
+                                    Text("800").foregroundColor(KTheme.textSecondary)
+                                    Spacer()
+                                    Text("5000").foregroundColor(KTheme.textSecondary)
+                                }
+                                .font(.system(.caption2, design: .rounded))
+                            }
+                            .padding(KTheme.cardPadding)
+                            .glassCard()
+                        }
+                    }
+
+                    Spacer(minLength: 20)
+
+                    Button(action: { proceedFromLifestyle() }) {
+                        Text(calorieMode == .formula ? "Calculate My Target" : "Confirm Target")
                     }
                     .buttonStyle(GradientButtonStyle())
                 }
@@ -323,6 +399,59 @@ struct OnboardingView: View {
             }
         }
         .navigationBarHidden(true)
+    }
+
+    private func modeTab(label: String, icon: String, mode: CalorieMode) -> some View {
+        let isSelected = calorieMode == mode
+        return Button(action: {
+            withAnimation(.spring(response: 0.3)) { calorieMode = mode }
+        }) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13))
+                Text(label)
+                    .font(.system(.subheadline, design: .rounded))
+                    .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .foregroundColor(isSelected ? .white : KTheme.textSecondary)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? AnyShapeStyle(KTheme.accentGradient) : AnyShapeStyle(Color.clear))
+            )
+        }
+    }
+
+    private func stepperButton(_ label: String, amount: Int) -> some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.3)) {
+                customCalorieTarget = max(800, min(5000, customCalorieTarget + amount))
+            }
+        }) {
+            Text(label)
+                .font(.system(.subheadline, design: .rounded))
+                .fontWeight(.bold)
+                .foregroundColor(KTheme.accentOrange)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(KTheme.accentOrange.opacity(0.12))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(KTheme.accentOrange.opacity(0.3), lineWidth: 1))
+                )
+        }
+    }
+
+    private var calorieHint: String {
+        switch customCalorieTarget {
+        case ..<1200: return "⚠️ Very low — consult a doctor"
+        case 1200..<1500: return "Aggressive deficit"
+        case 1500..<1800: return "Moderate deficit"
+        case 1800..<2200: return "Typical maintenance range"
+        case 2200..<2800: return "Active lifestyle / light surplus"
+        default: return "High performance / muscle gain"
+        }
     }
 
     // MARK: - Step 4: Result
@@ -354,6 +483,16 @@ struct OnboardingView: View {
                     .font(.system(.headline, design: .rounded))
                     .foregroundColor(KTheme.textSecondary)
 
+                if calorieMode == .formula {
+                    Text("Calculated with Mifflin-St Jeor")
+                        .font(.system(.caption, design: .rounded))
+                        .foregroundColor(KTheme.textSecondary.opacity(0.6))
+                } else {
+                    Text("Custom target")
+                        .font(.system(.caption, design: .rounded))
+                        .foregroundColor(KTheme.textSecondary.opacity(0.6))
+                }
+
                 Spacer()
 
                 Button(action: finishOnboarding) {
@@ -373,15 +512,19 @@ struct OnboardingView: View {
 
     // MARK: - Logic
 
-    private func calculateAndGoToResult() {
-        calculatedTarget = CalculatorService.calculateDailyTarget(
-            age: age,
-            gender: gender,
-            heightCm: heightCm,
-            weightKg: weightKg,
-            activityLevel: activityLevel,
-            goal: goal
-        )
+    private func proceedFromLifestyle() {
+        if calorieMode == .formula {
+            calculatedTarget = CalculatorService.calculateDailyTarget(
+                age: age,
+                gender: gender,
+                heightCm: heightCm,
+                weightKg: weightKg,
+                activityLevel: activityLevel,
+                goal: goal
+            )
+        } else {
+            calculatedTarget = customCalorieTarget
+        }
         path.append(OnboardingStep.result)
     }
 
@@ -406,7 +549,8 @@ struct OnboardingView: View {
             weightKg: weightKg,
             activityLevel: activityLevel,
             goal: goal,
-            dailyCalorieTarget: calculatedTarget
+            dailyCalorieTarget: calculatedTarget,
+            usesCustomCalorieTarget: calorieMode == .custom
         )
         modelContext.insert(newUser)
     }
@@ -415,4 +559,5 @@ struct OnboardingView: View {
 #Preview {
     OnboardingView()
         .modelContainer(for: [User.self, Meal.self], inMemory: true)
+        .preferredColorScheme(.dark)
 }
