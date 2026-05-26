@@ -4,7 +4,7 @@ import Foundation
 
 /// Communicates with the Google Gemini multimodal API using plain URLSession.
 /// Sends a meal image + text description and receives a structured JSON response
-/// with ingredient names, per-ingredient calories, and total calories.
+/// with ingredient names, per-ingredient calories, macros, and totals.
 final class GeminiService {
 
     static let shared = GeminiService()
@@ -16,7 +16,7 @@ final class GeminiService {
     /// - Parameters:
     ///   - imageData: JPEG image data of the meal.
     ///   - description: A short user-provided description (e.g. "Chicken and rice").
-    /// - Returns: A `GeminiMealResponse` containing ingredients and total calories.
+    /// - Returns: A `GeminiMealResponse` containing ingredients, macros, and total calories.
     func analyzeMeal(imageData: Data, description: String) async throws -> GeminiMealResponse {
         let request = try buildRequest(imageData: imageData, description: description)
 
@@ -89,23 +89,28 @@ final class GeminiService {
         You are a nutrition analysis AI. Analyze the food in this image.
         The user describes this meal as: "\(description)"
 
-        Identify every visible ingredient or food item and estimate the calories for each.
+        Identify every visible ingredient or food item and estimate the calories and macronutrients for each.
         Consider typical portion sizes visible in the image.
 
-        You MUST respond with ONLY a valid JSON object — no markdown, no explanation, no extra text.
+        You MUST respond with ONLY a valid JSON object - no markdown, no explanation, no extra text.
         Use this exact structure:
 
         {
           "ingredients": [
-            {"name": "Ingredient Name", "calories": 250},
-            {"name": "Another Ingredient", "calories": 150}
+            {"name": "Ingredient Name", "calories": 250, "protein": 30.0, "carbs": 5.0, "fat": 12.0},
+            {"name": "Another Ingredient", "calories": 150, "protein": 10.0, "carbs": 20.0, "fat": 3.0}
           ],
-          "total_calories": 400
+          "total_calories": 400,
+          "total_protein": 40.0,
+          "total_carbs": 25.0,
+          "total_fat": 15.0
         }
 
         Rules:
         - "calories" is an integer representing estimated kcal for the visible portion.
+        - "protein", "carbs", "fat" are doubles in grams for the visible portion.
         - "total_calories" is the sum of all ingredient calories.
+        - "total_protein", "total_carbs", "total_fat" are the sums of the respective macros.
         - Include at least 1 ingredient.
         - Do NOT wrap the JSON in markdown code fences.
         """
@@ -184,15 +189,24 @@ private struct GeminiAPIResponse: Decodable {
 struct GeminiMealResponse: Decodable {
     let ingredients: [Ingredient]
     let totalCalories: Int
+    let totalProtein: Double
+    let totalCarbs: Double
+    let totalFat: Double
 
     struct Ingredient: Decodable {
         let name: String
         let calories: Int
+        let protein: Double
+        let carbs: Double
+        let fat: Double
     }
 
     enum CodingKeys: String, CodingKey {
         case ingredients
         case totalCalories = "total_calories"
+        case totalProtein = "total_protein"
+        case totalCarbs = "total_carbs"
+        case totalFat = "total_fat"
     }
 }
 

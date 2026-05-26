@@ -131,7 +131,10 @@ final class MealCaptureManager: ObservableObject {
             textDescription: mealDescription,
             ingredients: result.ingredients.map(\.name),
             caloriesPerIngredient: result.ingredients.map(\.calories),
-            totalCalories: result.totalCalories
+            totalCalories: result.totalCalories,
+            protein: result.totalProtein,
+            carbs: result.totalCarbs,
+            fat: result.totalFat
         )
         meal.imagePath = imageFilename
 

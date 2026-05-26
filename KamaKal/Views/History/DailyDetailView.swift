@@ -5,41 +5,85 @@ struct DailyDetailView: View {
     @Environment(\.modelContext) private var modelContext
     let date: Date
     let meals: [Meal]
-    
-    var totalCalories: Int {
+
+    private var totalCalories: Int {
         meals.reduce(0) { $0 + $1.totalCalories }
     }
-    
+
+    private var totalProtein: Double {
+        meals.reduce(0) { $0 + $1.protein }
+    }
+
+    private var totalCarbs: Double {
+        meals.reduce(0) { $0 + $1.carbs }
+    }
+
+    private var totalFat: Double {
+        meals.reduce(0) { $0 + $1.fat }
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Header
-                VStack(spacing: 4) {
-                    Text("\(totalCalories) kcal")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundColor(.blue)
-                    Text("Total for the day")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top)
-                
-                // Meals List
-                ForEach(meals.sorted(by: { $0.createdAt > $1.createdAt })) { meal in
-                    mealDetailCard(meal)
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                deleteMeal(meal)
-                            } label: {
-                                Label("Delete Meal", systemImage: "trash")
+        ZStack {
+            KTheme.backgroundPrimary.ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header
+                    headerSection
+
+                    // Meals
+                    ForEach(meals.sorted(by: { $0.createdAt > $1.createdAt })) { meal in
+                        mealDetailCard(meal)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    deleteMeal(meal)
+                                } label: {
+                                    Label("Delete Meal", systemImage: "trash")
+                                }
                             }
-                        }
+                    }
                 }
+                .padding(KTheme.screenPadding)
             }
-            .padding()
         }
         .navigationTitle(date.formatted(date: .abbreviated, time: .omitted))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+    }
+
+    // MARK: - Header
+
+    private var headerSection: some View {
+        VStack(spacing: 16) {
+            Text("\(totalCalories)")
+                .font(.system(size: 52, weight: .bold, design: .rounded))
+                .foregroundStyle(KTheme.accentGradient)
+            + Text(" kcal")
+                .font(.system(.title3, design: .rounded))
+                .foregroundColor(KTheme.textSecondary)
+
+            // Macro row
+            HStack(spacing: 24) {
+                macroItem(label: "Protein", value: totalProtein, color: KTheme.proteinColor)
+                macroItem(label: "Carbs", value: totalCarbs, color: KTheme.carbsColor)
+                macroItem(label: "Fat", value: totalFat, color: KTheme.fatColor)
+            }
+        }
+        .padding(KTheme.cardPadding)
+        .frame(maxWidth: .infinity)
+        .glassCard()
+    }
+
+    private func macroItem(label: String, value: Double, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text("\(Int(value))g")
+                .font(.system(.title3, design: .rounded))
+                .fontWeight(.bold)
+                .foregroundColor(color)
+            Text(label)
+                .font(.system(.caption, design: .rounded))
+                .foregroundColor(KTheme.textSecondary)
+        }
     }
 
     // MARK: - Delete
@@ -47,9 +91,9 @@ struct DailyDetailView: View {
     private func deleteMeal(_ meal: Meal) {
         modelContext.delete(meal)
     }
-    
+
     // MARK: - Meal Detail Card
-    
+
     private func mealDetailCard(_ meal: Meal) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Image Header
@@ -63,63 +107,91 @@ struct DailyDetailView: View {
                     .clipped()
             } else {
                 Rectangle()
-                    .fill(Color(.systemGray5))
+                    .fill(KTheme.backgroundElevated)
                     .frame(height: 120)
                     .overlay {
                         Image(systemName: "photo")
                             .font(.largeTitle)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(KTheme.textSecondary)
                     }
             }
-            
+
             VStack(alignment: .leading, spacing: 16) {
                 // Title and Calories
                 HStack(alignment: .top) {
                     Text(meal.textDescription.isEmpty ? "Unknown Meal" : meal.textDescription)
-                        .font(.title3)
+                        .font(.system(.title3, design: .rounded))
                         .fontWeight(.bold)
-                    
+                        .foregroundColor(KTheme.textPrimary)
+
                     Spacer()
-                    
+
                     Text("\(meal.totalCalories) kcal")
-                        .font(.headline)
-                        .foregroundColor(.blue)
+                        .font(.system(.headline, design: .rounded))
+                        .foregroundStyle(KTheme.accentGradient)
                 }
-                
-                Divider()
-                
-                // Ingredients Breakdown — use enumerated offset as ID to handle duplicates (W10)
+
+                // Macro pills
+                HStack(spacing: 8) {
+                    macroPill("P: \(Int(meal.protein))g", color: KTheme.proteinColor)
+                    macroPill("C: \(Int(meal.carbs))g", color: KTheme.carbsColor)
+                    macroPill("F: \(Int(meal.fat))g", color: KTheme.fatColor)
+                }
+
+                Rectangle()
+                    .fill(KTheme.border)
+                    .frame(height: 1)
+
+                // Ingredients Breakdown
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("AI Analysis Breakdown")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    Text("Breakdown")
+                        .font(.system(.caption, design: .rounded))
+                        .foregroundColor(KTheme.textSecondary)
                         .textCase(.uppercase)
-                    
-                    ForEach(Array(zip(meal.ingredients, meal.caloriesPerIngredient).enumerated()), id: \.offset) { _, pair in
+
+                    ForEach(Array(zip(meal.ingredients, meal.caloriesPerIngredient).enumerated()), id: \.offset) { index, pair in
                         let (ingredient, calories) = pair
                         HStack {
                             Text(ingredient)
-                                .font(.body)
+                                .font(.system(.body, design: .rounded))
+                                .foregroundColor(KTheme.textPrimary)
                             Spacer()
                             Text("\(calories) kcal")
-                                .font(.body)
-                                .foregroundColor(.secondary)
+                                .font(.system(.body, design: .rounded))
+                                .foregroundColor(KTheme.textSecondary)
                         }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .background(
+                            index % 2 == 0
+                                ? KTheme.backgroundElevated.opacity(0.3)
+                                : Color.clear
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                 }
-                
+
                 // Time
                 Text(meal.createdAt, style: .time)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundColor(KTheme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.top, 4)
             }
-            .padding()
-            .background(Color(.systemBackground))
+            .padding(KTheme.cardPadding)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
-        .padding(.horizontal, 4) // slight padding for shadow visibility
+        .glassCard(cornerRadius: KTheme.cornerRadius)
+    }
+
+    private func macroPill(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.system(size: 12, weight: .semibold, design: .rounded))
+            .foregroundColor(color)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(color.opacity(0.15))
+            )
     }
 }

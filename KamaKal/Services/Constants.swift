@@ -16,8 +16,8 @@ enum Constants {
     /// Your Google Gemini API key from https://aistudio.google.com/apikey
     static let geminiAPIKey = "YOUR_GEMINI_API_KEY"
 
-    /// Gemini model to use. `gemini-2.0-flash` supports vision + text.
-    static let geminiModel = "gemini-2.0-flash"
+    /// Gemini model to use. `gemini-3.1-flash-lite` is fast and cost-effective.
+    static let geminiModel = "gemini-3.1-flash-lite"
 
     /// The full Gemini REST endpoint (key is appended at call time).
     static var geminiEndpoint: String {
