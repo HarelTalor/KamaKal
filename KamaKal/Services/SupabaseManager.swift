@@ -57,14 +57,10 @@ final class SupabaseManager {
             return
         }
 
-        logger.info("syncMeals called with \(meals.count) meals — sync not yet implemented.")
-        // TODO: Implement upsert logic
-        // Example (uncomment when table is ready):
-        //
-        // try await client
-        //     .from("meals")
-        //     .upsert(meals)
-        //     .execute()
+        try await client
+            .from("meals")
+            .upsert(meals)
+            .execute()
     }
 }
 

@@ -136,6 +136,16 @@ final class MealCaptureManager: ObservableObject {
         meal.imagePath = imageFilename
 
         context.insert(meal)
+        
+        Task {
+            do {
+                try await SupabaseManager.shared.syncMeals([meal.toDTO()])
+                meal.isSyncedToSupabase = true
+            } catch {
+                logger.error("Failed to sync meal to Supabase: \(error.localizedDescription)")
+            }
+        }
+        
         return meal
     }
 

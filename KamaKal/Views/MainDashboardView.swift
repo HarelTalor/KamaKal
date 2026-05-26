@@ -3,13 +3,12 @@ import SwiftData
 
 struct MainDashboardView: View {
     @Query private var users: [User]
-    @Query(sort: \Meal.date, order: .reverse) private var allMeals: [Meal]
-
-    /// Filters meals to only those from today. Avoids using #Predicate with
-    /// non-pure expressions (Calendar calls) which won't compile.
-    private var todayMeals: [Meal] {
+    @Query private var todayMeals: [Meal]
+    
+    init() {
         let startOfDay = Calendar.current.startOfDay(for: Date())
-        return allMeals.filter { $0.date >= startOfDay }
+        let predicate = #Predicate<Meal> { $0.date >= startOfDay }
+        _todayMeals = Query(filter: predicate, sort: \Meal.date, order: .reverse)
     }
     
     @State private var showMealCapture = false
