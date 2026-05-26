@@ -141,7 +141,7 @@ jobs:
 
           # ---- Import certificate ----
           CERT_PATH="$RUNNER_TEMP/certificate.p12"
-          echo "$CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
+          echo "$CERTIFICATE_BASE64" | tr -d '\r\n ' | base64 --decode > "$CERT_PATH"
 
           security import "$CERT_PATH" \
             -P "$CERTIFICATE_PASSWORD" \
@@ -164,7 +164,7 @@ jobs:
           mkdir -p "$PP_DIR"
 
           PP_PATH="$PP_DIR/profile.mobileprovision"
-          echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PP_PATH"
+          echo "$PROVISIONING_PROFILE_BASE64" | tr -d '\r\n ' | base64 --decode > "$PP_PATH"
 
           # Extract UUID and rename to UUID.mobileprovision (Xcode requirement)
           PP_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< \
