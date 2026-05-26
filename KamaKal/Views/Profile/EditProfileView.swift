@@ -313,7 +313,7 @@ struct EditProfileView: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: User.self, Meal.self, configurations: config)
+    let container = try! ModelContainer(for: User.self, Meal.self, DailySummary.self, configurations: config)
     let sample = User(age: 28, gender: .female, heightCm: 165, weightKg: 62,
                       activityLevel: .moderatelyActive, goal: .maintain, dailyCalorieTarget: 1900)
     container.mainContext.insert(sample)

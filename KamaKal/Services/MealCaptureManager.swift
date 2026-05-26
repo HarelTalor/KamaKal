@@ -140,10 +140,13 @@ final class MealCaptureManager: ObservableObject {
 
         context.insert(meal)
         
-        Task {
+        let dto = meal.toDTO()
+        Task { [weak meal] in
             do {
-                try await SupabaseManager.shared.syncMeals([meal.toDTO()])
-                meal.isSyncedToSupabase = true
+                try await SupabaseManager.shared.syncMeals([dto])
+                if let meal = meal {
+                    meal.isSyncedToSupabase = true
+                }
             } catch {
                 logger.error("Failed to sync meal to Supabase: \(error.localizedDescription)")
             }

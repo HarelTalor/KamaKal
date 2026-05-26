@@ -7,11 +7,7 @@ enum OnboardingStep: Hashable {
     case result
 }
 
-/// Mode chosen by user for calorie target
-enum CalorieMode {
-    case formula   // auto-calculate with Mifflin-St Jeor
-    case custom    // manually typed number
-}
+
 
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
@@ -445,7 +441,7 @@ struct OnboardingView: View {
 
     private var calorieHint: String {
         switch customCalorieTarget {
-        case ..<1200: return "⚠️ Very low — consult a doctor"
+        case 0..<1200: return "⚠️ Very low — consult a doctor"
         case 1200..<1500: return "Aggressive deficit"
         case 1500..<1800: return "Moderate deficit"
         case 1800..<2200: return "Typical maintenance range"
@@ -558,6 +554,6 @@ struct OnboardingView: View {
 
 #Preview {
     OnboardingView()
-        .modelContainer(for: [User.self, Meal.self], inMemory: true)
+        .modelContainer(for: [User.self, Meal.self, DailySummary.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

@@ -23,7 +23,7 @@ name: Deploy to TestFlight
 
 on:
   push:
-    branches: [main, test-ios-remote-deployment]
+    branches: [main, test-ios-remote-deployment, fix-ios-build-failure]
   workflow_dispatch:
 
 concurrency:
@@ -172,6 +172,7 @@ jobs:
                 - KamaKal
               dependencies:
                 - package: Supabase
+                  product: Supabase
               settings:
                 base:
                   CODE_SIGN_STYLE: Manual
