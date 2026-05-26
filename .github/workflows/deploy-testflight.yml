@@ -213,7 +213,7 @@ jobs:
             PROVISIONING_PROFILE="$PROVISIONING_PROFILE_UUID" \
             OTHER_LDFLAGS='$(inherited)' \
             SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited)' \
-            | xcpretty --color || true
+            | xcpretty --color
 
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
           echo "✅ Archive created at $ARCHIVE_PATH"
@@ -261,7 +261,7 @@ jobs:
             -archivePath "$ARCHIVE_PATH" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
             -exportPath "$EXPORT_DIR" \
-            | xcpretty --color || true
+            | xcpretty --color
 
           echo "EXPORT_DIR=$EXPORT_DIR" >> "$GITHUB_ENV"
           echo "✅ IPA exported to $EXPORT_DIR"
