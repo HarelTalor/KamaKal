@@ -81,48 +81,6 @@ jobs:
           xcodebuild -version
 
       # -----------------------------------------------------------------------
-      # 4. Generate Xcode project
-      # -----------------------------------------------------------------------
-      - name: Generate Xcode project
-        env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          BUNDLE_ID: ${{ secrets.BUNDLE_IDENTIFIER }}
-        run: |
-          brew install xcodegen
-          
-          cat > project.yml << EOF
-          name: KamaKal
-          packages:
-            Supabase:
-              url: https://github.com/supabase/supabase-swift
-              from: 2.0.0
-          targets:
-            KamaKal:
-              type: application
-              platform: iOS
-              deploymentTarget: "17.0"
-              sources: [KamaKal]
-              dependencies:
-                - package: Supabase
-              settings:
-                base:
-                  CODE_SIGN_STYLE: Manual
-                  CODE_SIGN_IDENTITY: "Apple Distribution"
-                  DEVELOPMENT_TEAM: ${TEAM_ID}
-                  PRODUCT_BUNDLE_IDENTIFIER: ${BUNDLE_ID}
-                  GENERATE_INFOPLIST_FILE: YES
-                  CURRENT_PROJECT_VERSION: 1
-                  MARKETING_VERSION: 1.0.0
-                  INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "KamaKal needs access to your photos so you can log meal images."
-          EOF
-
-          # Generate Xcode project from project.yml
-          xcodegen generate
-
-          echo "✅ Xcode project generated"
-          ls -la *.xcodeproj || true
-
-      # -----------------------------------------------------------------------
       # 4. Install Apple certificate and provisioning profile
       # -----------------------------------------------------------------------
       - name: Install Apple certificate and provisioning profile
@@ -177,6 +135,49 @@ jobs:
           echo "✅ Provisioning profile installed (UUID: $PP_UUID)"
 
       # -----------------------------------------------------------------------
+      # 5. Generate Xcode project
+      # -----------------------------------------------------------------------
+      - name: Generate Xcode project
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUNDLE_ID: ${{ secrets.BUNDLE_IDENTIFIER }}
+        run: |
+          brew install xcodegen
+          
+          cat > project.yml << EOF
+          name: KamaKal
+          packages:
+            Supabase:
+              url: https://github.com/supabase/supabase-swift
+              from: 2.0.0
+          targets:
+            KamaKal:
+              type: application
+              platform: iOS
+              deploymentTarget: "17.0"
+              sources: [KamaKal]
+              dependencies:
+                - package: Supabase
+              settings:
+                base:
+                  CODE_SIGN_STYLE: Manual
+                  CODE_SIGN_IDENTITY: "Apple Distribution"
+                  DEVELOPMENT_TEAM: ${TEAM_ID}
+                  PRODUCT_BUNDLE_IDENTIFIER: ${BUNDLE_ID}
+                  PROVISIONING_PROFILE_SPECIFIER: "${PROVISIONING_PROFILE_UUID}"
+                  GENERATE_INFOPLIST_FILE: YES
+                  CURRENT_PROJECT_VERSION: 1
+                  MARKETING_VERSION: 1.0.0
+                  INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "KamaKal needs access to your photos so you can log meal images."
+          EOF
+
+          # Generate Xcode project from project.yml
+          xcodegen generate
+
+          echo "✅ Xcode project generated"
+          ls -la *.xcodeproj || true
+
+      # -----------------------------------------------------------------------
       # 5. Set up App Store Connect API key for altool / notarytool
       # -----------------------------------------------------------------------
       - name: Set up App Store Connect API key
@@ -209,8 +210,6 @@ jobs:
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             CODE_SIGN_STYLE="Manual" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            PROVISIONING_PROFILE="$PROVISIONING_PROFILE_UUID" \
             OTHER_LDFLAGS='$(inherited)' \
             SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited)'
 
