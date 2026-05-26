@@ -118,7 +118,7 @@ struct OnboardingView: View {
 
                     Spacer(minLength: 40)
 
-                    Button(action: { path.append(.bodyStats) }) {
+                    Button(action: { path.append(OnboardingStep.bodyStats) }) {
                         Text("Next")
                     }
                     .buttonStyle(GradientButtonStyle())
@@ -215,7 +215,7 @@ struct OnboardingView: View {
 
                     Spacer(minLength: 40)
 
-                    Button(action: { path.append(.lifestyle) }) {
+                    Button(action: { path.append(OnboardingStep.lifestyle) }) {
                         Text("Next")
                     }
                     .buttonStyle(GradientButtonStyle())
